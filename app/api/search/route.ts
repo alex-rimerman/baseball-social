@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/prisma/client"
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -17,8 +19,8 @@ export async function GET(request: Request) {
       const users = await prisma.user.findMany({
         where: {
           OR: [
-            { username: { contains: q, mode: "insensitive" } },
-            { name: { contains: q, mode: "insensitive" } }
+            { username: { contains: q, mode: "insensitive" as const } },
+            { name: { contains: q, mode: "insensitive" as const } }
           ]
         },
         take: 10,
@@ -44,7 +46,7 @@ export async function GET(request: Request) {
       const posts = await prisma.post.findMany({
         where: {
           OR: [
-            { content: { contains: q, mode: "insensitive" } },
+            { content: { contains: q, mode: "insensitive" as const } },
             { hashtags: { has: q.replace("#", "") } }
           ]
         },
