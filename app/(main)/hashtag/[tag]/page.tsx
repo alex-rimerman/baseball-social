@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { Hash } from "lucide-react"
 import PostCard from "@/components/PostCard"
@@ -36,11 +36,7 @@ export default function HashtagPage() {
   const [loading, setLoading] = useState(true)
   const [totalPosts, setTotalPosts] = useState(0)
 
-  useEffect(() => {
-    fetchPosts()
-  }, [hashtag])
-
-  const fetchPosts = async (pageNum: number = 1, append: boolean = false) => {
+  const fetchPosts = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     try {
       const response = await fetch(`/api/hashtag/${encodeURIComponent(hashtag)}?page=${pageNum}&limit=20`)
       const data = await response.json()
@@ -58,7 +54,11 @@ export default function HashtagPage() {
       console.error("Error fetching hashtag posts:", error)
       setLoading(false)
     }
-  }
+  }, [hashtag])
+
+  useEffect(() => {
+    fetchPosts()
+  }, [fetchPosts])
 
   const loadMore = () => {
     const nextPage = page + 1

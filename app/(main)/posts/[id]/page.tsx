@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import PostCard from "@/components/PostCard"
@@ -35,11 +35,7 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchPost()
-  }, [id])
-
-  const fetchPost = async () => {
+  const fetchPost = useCallback(async () => {
     try {
       const response = await fetch(`/api/posts/${id}`)
       if (!response.ok) {
@@ -58,7 +54,11 @@ export default function PostDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  useEffect(() => {
+    fetchPost()
+  }, [fetchPost])
 
   if (loading) {
     return (
@@ -80,7 +80,7 @@ export default function PostDetailPage() {
         </button>
         <div className="card text-center text-gray-500 py-12">
           <p className="text-lg font-semibold mb-2">{error || "Post not found"}</p>
-          <p className="text-sm">This post may have been deleted or doesn't exist.</p>
+          <p className="text-sm">This post may have been deleted or doesn&apos;t exist.</p>
         </div>
       </div>
     )

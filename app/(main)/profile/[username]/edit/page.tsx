@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useParams, useRouter } from "next/navigation"
 import { Save, ArrowLeft } from "lucide-react"
@@ -21,15 +21,7 @@ export default function EditProfilePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
-  useEffect(() => {
-    if (session?.user?.username !== username) {
-      router.push(`/profile/${username}`)
-      return
-    }
-    fetchProfile()
-  }, [username, session])
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await fetch(`/api/users/${username}`)
       const data = await response.json()
@@ -45,7 +37,15 @@ export default function EditProfilePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [username])
+
+  useEffect(() => {
+    if (session?.user?.username !== username) {
+      router.push(`/profile/${username}`)
+      return
+    }
+    fetchProfile()
+  }, [username, session, router, fetchProfile])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({

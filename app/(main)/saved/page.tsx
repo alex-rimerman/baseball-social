@@ -89,7 +89,7 @@ export default function SavedPage() {
           <BookmarkCheck className="w-8 h-8 mr-2 text-primary-600" />
           Saved Posts
         </h1>
-        <p className="text-gray-600">Posts you've saved for later</p>
+        <p className="text-gray-600">Posts you&apos;ve saved for later</p>
       </div>
 
       {posts.length === 0 ? (

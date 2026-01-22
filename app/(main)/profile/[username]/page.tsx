@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
@@ -58,12 +58,7 @@ export default function ProfilePage() {
   const [following, setFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
 
-  useEffect(() => {
-    fetchUser()
-    fetchPosts()
-  }, [username])
-
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       const response = await fetch(`/api/users/${username}`)
       const data = await response.json()
@@ -74,9 +69,9 @@ export default function ProfilePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [username])
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       const response = await fetch(`/api/users/${username}/posts`)
       const data = await response.json()
@@ -84,7 +79,12 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Error fetching posts:", error)
     }
-  }
+  }, [username])
+
+  useEffect(() => {
+    fetchUser()
+    fetchPosts()
+  }, [fetchUser, fetchPosts])
 
   const handleFollow = async () => {
     if (!session || !user || user.isOwnProfile) return

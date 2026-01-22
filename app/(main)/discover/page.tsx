@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import Image from "next/image"
@@ -49,19 +49,7 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(false)
   const [searchType, setSearchType] = useState<"all" | "users" | "posts">("all")
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (query.trim().length > 0) {
-        performSearch()
-      } else {
-        setResults({})
-      }
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [query, searchType])
-
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=${searchType}`)
@@ -72,7 +60,19 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [query, searchType])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (query.trim().length > 0) {
+        performSearch()
+      } else {
+        setResults({})
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [query, searchType, performSearch])
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 pb-24 md:pb-8">
@@ -214,7 +214,7 @@ export default function DiscoverPage() {
             (!results.users || results.users.length === 0) &&
             (!results.posts || results.posts.length === 0) && (
               <div className="card text-center text-gray-500 py-12">
-                No results found for "{query}"
+                No results found for &quot;{query}&quot;
               </div>
             )}
         </>

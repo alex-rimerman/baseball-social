@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { TrendingUp, Users, Sparkles, Hash } from "lucide-react"
@@ -55,11 +55,7 @@ export default function ExplorePage() {
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchExploreData()
-  }, [activeTab])
-
-  const fetchExploreData = async () => {
+  const fetchExploreData = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/explore?type=${activeTab}`)
@@ -79,7 +75,11 @@ export default function ExplorePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeTab])
+
+  useEffect(() => {
+    fetchExploreData()
+  }, [fetchExploreData])
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 pb-24 md:pb-8">
