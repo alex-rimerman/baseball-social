@@ -108,7 +108,7 @@ export async function GET(request: Request) {
           id: { notIn: followingIds },
           OR: [
             ...(user?.favoriteTeam ? [{ favoriteTeam: user.favoriteTeam }] : []),
-            ...(user?.location ? [{ location: { contains: user.location, mode: "insensitive" } }] : []),
+            ...(user?.location ? [{ location: { contains: user.location, mode: "insensitive" as const } }] : []),
           ]
         },
         take: 10,
@@ -216,11 +216,11 @@ export async function GET(request: Request) {
             authorId: { notIn: [...followingIds, userId] },
             OR: [
               ...(user.favoriteTeam ? [
-                { content: { contains: user.favoriteTeam, mode: "insensitive" } },
+                { content: { contains: user.favoriteTeam, mode: "insensitive" as const } },
                 { hashtags: { has: user.favoriteTeam.replace(/\s+/g, "") } }
               ] : []),
               ...(user.favoritePlayer ? [
-                { content: { contains: user.favoritePlayer, mode: "insensitive" } },
+                { content: { contains: user.favoritePlayer, mode: "insensitive" as const } },
                 { hashtags: { has: user.favoritePlayer.replace(/\s+/g, "") } }
               ] : []),
             ]
