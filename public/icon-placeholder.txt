@@ -1,0 +1,27 @@
+# App Icons Needed
+
+To make your PWA fully functional, you need to add these icon files to the `public` folder:
+
+1. `icon-192.png` - 192x192 pixels
+2. `icon-512.png` - 512x512 pixels
+
+## Quick Way to Generate Icons:
+
+1. Create a 512x512 logo/image for your app
+2. Use one of these tools:
+   - https://realfavicongenerator.net/
+   - https://www.pwabuilder.com/imageGenerator
+   - https://github.com/onderceylan/pwa-asset-generator
+
+3. Download the generated icons
+4. Place them in the `public` folder
+
+## Temporary Solution:
+
+You can use any 192x192 and 512x512 images for now. The app will work, but icons won't look perfect.
+
+For a baseball theme, consider:
+- Baseball icon
+- Bat and ball
+- Stadium silhouette
+- Your app logo
