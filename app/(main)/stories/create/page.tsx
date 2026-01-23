@@ -55,6 +55,52 @@ export default function CreateStoryPage() {
     }
   }
 
+  // Upload directly to Cloudinary for large files (bypasses Vercel's 4.5MB limit)
+  const uploadToCloudinaryDirect = async (file: File): Promise<string> => {
+    // Get upload signature from our API
+    const signatureResponse = await fetch("/api/upload/signature", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileType: file.type, fileName: file.name }),
+    })
+
+    if (!signatureResponse.ok) {
+      throw new Error("Failed to get upload signature")
+    }
+
+    const { signature, timestamp, cloudName, apiKey, folder, resourceType } = await signatureResponse.json()
+
+    // Upload directly to Cloudinary
+    const uploadFormData = new FormData()
+    uploadFormData.append("file", file)
+    uploadFormData.append("api_key", apiKey)
+    uploadFormData.append("timestamp", timestamp.toString())
+    uploadFormData.append("signature", signature)
+    uploadFormData.append("folder", folder)
+    uploadFormData.append("resource_type", resourceType)
+
+    if (resourceType === "video") {
+      uploadFormData.append("eager", "mp4")
+      uploadFormData.append("eager_async", "false")
+    }
+
+    const cloudinaryResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
+      {
+        method: "POST",
+        body: uploadFormData,
+      }
+    )
+
+    if (!cloudinaryResponse.ok) {
+      const errorData = await cloudinaryResponse.json().catch(() => ({}))
+      throw new Error(errorData.error?.message || "Failed to upload to Cloudinary")
+    }
+
+    const result = await cloudinaryResponse.json()
+    return result.secure_url
+  }
+
   const handleSubmit = async () => {
     if (!imageFile && !videoFile) return
 
@@ -66,23 +112,14 @@ export default function CreateStoryPage() {
       let videoUrl: string | null = null
 
       const fileToUpload = imageFile || videoFile!
-      const formData = new FormData()
-      formData.append("file", fileToUpload)
-
-      const uploadResponse = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!uploadResponse.ok) {
-        throw new Error("Failed to upload media")
-      }
-
-      const uploadData = await uploadResponse.json()
+      
+      // Always use direct Cloudinary upload for stories (they can be large)
+      const uploadedUrl = await uploadToCloudinaryDirect(fileToUpload)
+      
       if (imageFile) {
-        imageUrl = uploadData.url
+        imageUrl = uploadedUrl
       } else {
-        videoUrl = uploadData.url
+        videoUrl = uploadedUrl
       }
 
       const response = await fetch("/api/stories", {
