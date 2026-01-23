@@ -126,7 +126,7 @@ export default function Feed() {
         <CreatePost onPostCreated={handlePostCreated} />
       </div>
 
-      {/* Real-time updates */}
+      {/* Real-time updates woo */}
       <RealtimeFeed posts={posts} onPostsUpdate={handlePostsUpdate} />
 
       {/* Posts Feed */}
