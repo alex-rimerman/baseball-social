@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
@@ -9,19 +9,20 @@ export const metadata: Metadata = {
   title: 'Baseball Social - Connect with Baseball Fans',
   description: 'A social media platform for baseball fans to share, connect, and celebrate America\'s pastime',
   manifest: '/manifest.json',
-  themeColor: '#dc2626',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Baseball Social',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: 'cover',
-  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#dc2626',
 }
 
 export default function RootLayout({

@@ -4,9 +4,8 @@ import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
-import PostCard from "@/components/PostCard"
-import { UserPlus, UserMinus, MapPin, Calendar, Edit } from "lucide-react"
 import Link from "next/link"
+import { UserPlus, UserMinus, MoreHorizontal, Grid3x3 } from "lucide-react"
 
 interface User {
   id: string
@@ -29,23 +28,8 @@ interface User {
 
 interface Post {
   id: string
-  content: string | null
   imageUrl: string | null
   videoUrl: string | null
-  hashtags: string[]
-  mentions: string[]
-  author: {
-    id: string
-    username: string
-    name: string | null
-    image: string | null
-  }
-  isLiked: boolean
-  _count: {
-    likes: number
-    comments: number
-  }
-  createdAt: string
 }
 
 export default function ProfilePage() {
@@ -148,138 +132,155 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">Loading profile...</div>
+      <div className="max-w-4xl mx-auto min-h-screen bg-white pb-20">
+        <div className="text-center py-8">Loading profile...</div>
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">User not found</div>
+      <div className="max-w-4xl mx-auto min-h-screen bg-white pb-20">
+        <div className="text-center py-8">User not found</div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 pb-24 md:pb-8">
-      <div className="card mb-6">
-        <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
-          <div className="w-24 h-24 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+    <div className="max-w-4xl mx-auto min-h-screen bg-white pb-20">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-300">
+        <button onClick={() => router.back()} className="p-2">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h1 className="font-semibold text-sm">{user.username}</h1>
+        <button className="p-2">
+          <MoreHorizontal className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Profile Info */}
+      <div className="px-4 py-6">
+        <div className="flex items-start space-x-6 mb-6">
+          {/* Profile Picture */}
+          <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
             {user.image ? (
               <Image
                 src={user.image}
                 alt={user.username}
-                width={96}
-                height={96}
+                width={80}
+                height={80}
                 className="w-full h-full object-cover"
                 unoptimized
               />
             ) : (
-              <div className="w-full h-full bg-primary-600 flex items-center justify-center text-white text-3xl font-semibold">
+              <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-semibold">
                 {user.username.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
 
+          {/* Stats and Actions */}
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h1 className="text-2xl font-bold">{user.name || user.username}</h1>
-                <p className="text-gray-500">@{user.username}</p>
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="text-center">
+                <div className="font-semibold">{user._count.posts}</div>
+                <div className="text-xs text-gray-600">posts</div>
               </div>
-              {user.isOwnProfile ? (
-                <Link
-                  href={`/profile/${username}/edit`}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors bg-primary-600 text-white hover:bg-primary-700"
-                >
-                  <Edit className="w-5 h-5" />
-                  <span>Edit Profile</span>
-                </Link>
-              ) : (
-                session && (
-                  <button
-                    onClick={handleFollow}
-                    disabled={followLoading}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                      following
-                        ? "bg-gray-200 text-gray-900 hover:bg-gray-300"
-                        : "bg-primary-600 text-white hover:bg-primary-700"
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {following ? (
-                      <>
-                        <UserMinus className="w-5 h-5" />
-                        <span>Unfollow</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-5 h-5" />
-                        <span>Follow</span>
-                      </>
-                    )}
-                  </button>
-                )
-              )}
-            </div>
-
-            {user.bio && <p className="text-gray-700 mb-3">{user.bio}</p>}
-
-            <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
-              {user.location && (
-                <div className="flex items-center space-x-1">
-                  <MapPin className="w-4 h-4" />
-                  <span>{user.location}</span>
-                </div>
-              )}
-              <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4" />
-                <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
+              <div className="text-center">
+                <div className="font-semibold">{user._count.followers.toLocaleString()}</div>
+                <div className="text-xs text-gray-600">followers</div>
+              </div>
+              <div className="text-center">
+                <div className="font-semibold">{user._count.following}</div>
+                <div className="text-xs text-gray-600">following</div>
               </div>
             </div>
 
-            {(user.favoriteTeam || user.favoritePlayer) && (
-              <div className="flex flex-wrap gap-4 text-sm mb-4">
-                {user.favoriteTeam && (
-                  <div className="bg-primary-100 text-primary-800 px-3 py-1 rounded-full">
-                    ⚾ Team: {user.favoriteTeam}
-                  </div>
-                )}
-                {user.favoritePlayer && (
-                  <div className="bg-primary-100 text-primary-800 px-3 py-1 rounded-full">
-                    👤 Player: {user.favoritePlayer}
-                  </div>
-                )}
-              </div>
+            {/* Action Button */}
+            {user.isOwnProfile ? (
+              <Link
+                href={`/profile/${username}/edit`}
+                className="block w-full text-center py-1.5 px-4 border border-gray-300 rounded-md text-sm font-semibold"
+              >
+                Edit Profile
+              </Link>
+            ) : (
+              <button
+                onClick={handleFollow}
+                disabled={followLoading}
+                className={`w-full py-1.5 px-4 rounded-md text-sm font-semibold ${
+                  following
+                    ? "bg-gray-200 text-gray-900"
+                    : "bg-blue-500 text-white"
+                } disabled:opacity-50`}
+              >
+                {following ? "Following" : "Follow"}
+              </button>
             )}
-
-            <div className="flex space-x-6">
-              <div>
-                <span className="font-semibold">{user._count.posts}</span>
-                <span className="text-gray-600 ml-1">Posts</span>
-              </div>
-              <div>
-                <span className="font-semibold">{user._count.followers}</span>
-                <span className="text-gray-600 ml-1">Followers</span>
-              </div>
-              <div>
-                <span className="font-semibold">{user._count.following}</span>
-                <span className="text-gray-600 ml-1">Following</span>
-              </div>
-            </div>
           </div>
+        </div>
+
+        {/* Bio */}
+        <div>
+          <h2 className="font-semibold text-sm mb-1">{user.name || user.username}</h2>
+          {user.bio && <p className="text-sm mb-1">{user.bio}</p>}
+          {user.location && (
+            <p className="text-sm text-gray-600 mb-1">{user.location}</p>
+          )}
+          {(user.favoriteTeam || user.favoritePlayer) && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {user.favoriteTeam && (
+                <span className="text-sm text-blue-600">⚾ {user.favoriteTeam}</span>
+              )}
+              {user.favoritePlayer && (
+                <span className="text-sm text-blue-600">👤 {user.favoritePlayer}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="space-y-6">
-        <h2 className="text-xl font-bold">Posts</h2>
+      {/* Posts Grid */}
+      <div className="border-t border-gray-300">
+        <div className="flex items-center justify-center py-3 border-b border-gray-300">
+          <Grid3x3 className="w-5 h-5 mr-2" />
+          <span className="text-xs font-semibold uppercase tracking-wide">Posts</span>
+        </div>
+
         {posts.length === 0 ? (
-          <div className="card text-center text-gray-500 py-12">
-            No posts yet. {user.isOwnProfile ? "Create your first post!" : "This user hasn't posted anything yet."}
+          <div className="text-center py-12 text-gray-500">
+            <Grid3x3 className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+            <p className="text-sm">No posts yet</p>
           </div>
         ) : (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
+          <div className="grid grid-cols-3 gap-0.5">
+            {posts.map((post) => (
+              <Link
+                key={post.id}
+                href={`/posts/${post.id}`}
+                className="aspect-square bg-gray-100 relative group"
+              >
+                {post.imageUrl ? (
+                  <Image
+                    src={post.imageUrl}
+                    alt="Post"
+                    fill
+                    className="object-cover group-hover:opacity-90 transition-opacity"
+                    unoptimized
+                  />
+                ) : post.videoUrl ? (
+                  <div className="w-full h-full flex items-center justify-center bg-black">
+                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                    </svg>
+                  </div>
+                ) : null}
+              </Link>
+            ))}
+          </div>
         )}
       </div>
     </div>

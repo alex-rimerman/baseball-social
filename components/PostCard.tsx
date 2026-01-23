@@ -99,7 +99,7 @@ export default function PostCard({ post }: PostCardProps) {
   const renderContent = () => {
     if (post.videoUrl) {
       return (
-        <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
+        <div className="w-full aspect-square bg-black">
           <ReactPlayer
             url={post.videoUrl}
             width="100%"
@@ -113,13 +113,12 @@ export default function PostCard({ post }: PostCardProps) {
 
     if (post.imageUrl) {
       return (
-        <div className="w-full relative">
+        <div className="w-full aspect-square relative bg-gray-100">
           <Image
             src={post.imageUrl}
             alt={post.content || "Post image"}
-            width={800}
-            height={800}
-            className="w-full h-auto rounded-lg"
+            fill
+            className="object-contain"
             unoptimized
           />
         </div>
@@ -129,124 +128,138 @@ export default function PostCard({ post }: PostCardProps) {
     return null
   }
 
-  const renderHashtags = () => {
-    if (!post.hashtags || post.hashtags.length === 0) return null
-
-    return (
-      <div className="flex flex-wrap gap-2 mt-2">
-        {post.hashtags.map((tag, index) => (
-          <Link
-            key={index}
-            href={`/hashtag/${tag}`}
-            className="text-primary-600 hover:underline"
-          >
-            #{tag}
-          </Link>
-        ))}
-      </div>
-    )
-  }
-
   return (
-    <div className="card">
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-white border-b border-gray-200 mb-1">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3">
         <Link
           href={`/profile/${post.author.username}`}
           className="flex items-center space-x-3"
         >
-          <div className="w-12 h-12 rounded-full bg-gray-300 overflow-hidden">
+          <div className="w-8 h-8 rounded-full bg-gray-300 overflow-hidden ring-2 ring-offset-2 ring-offset-white ring-gray-200">
             {post.author.image ? (
               <Image
                 src={post.author.image}
                 alt={post.author.username}
-                width={48}
-                height={48}
+                width={32}
+                height={32}
                 className="w-full h-full object-cover"
                 unoptimized
               />
             ) : (
-              <div className="w-full h-full bg-primary-600 flex items-center justify-center text-white font-semibold">
+              <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
                 {post.author.username.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
-          <div>
-            <p className="font-semibold">{post.author.name || post.author.username}</p>
-            <p className="text-sm text-gray-500">@{post.author.username}</p>
-          </div>
+          <span className="font-semibold text-sm">{post.author.username}</span>
         </Link>
-        <button className="p-2 hover:bg-gray-100 rounded-full">
-          <MoreHorizontal className="w-5 h-5" />
+        <button className="p-1">
+          <MoreHorizontal className="w-5 h-5 text-gray-900" />
         </button>
       </div>
 
-      {post.content && (
-        <p 
-          className="mb-4 whitespace-pre-wrap cursor-pointer hover:text-primary-600 transition-colors"
-          onClick={() => router.push(`/posts/${post.id}`)}
-        >
-          {post.content}
-        </p>
-      )}
-
+      {/* Media */}
       <div onClick={() => router.push(`/posts/${post.id}`)} className="cursor-pointer">
         {renderContent()}
       </div>
-      {renderHashtags()}
 
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-        <button
-          onClick={handleLike}
-          className={`flex items-center space-x-2 ${
-            isLiked ? "text-red-600" : "text-gray-600"
-          } hover:text-red-600 transition-colors`}
-        >
-          <Heart className={`w-6 h-6 ${isLiked ? "fill-current" : ""}`} />
-          <span>{likesCount}</span>
-        </button>
+      {/* Actions */}
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handleLike}
+              className="p-0"
+            >
+              {isLiked ? (
+                <Heart className="w-6 h-6 text-red-500 fill-current" />
+              ) : (
+                <Heart className="w-6 h-6 text-gray-900" />
+              )}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                router.push(`/posts/${post.id}`)
+              }}
+              className="p-0"
+            >
+              <MessageCircle className="w-6 h-6 text-gray-900" />
+            </button>
+            <button className="p-0">
+              <Share2 className="w-6 h-6 text-gray-900" />
+            </button>
+          </div>
+          <button
+            onClick={handleSave}
+            className="p-0"
+          >
+            {isSaved ? (
+              <BookmarkCheck className="w-6 h-6 text-gray-900 fill-current" />
+            ) : (
+              <Bookmark className="w-6 h-6 text-gray-900" />
+            )}
+          </button>
+        </div>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            router.push(`/posts/${post.id}`)
-          }}
-          className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors"
-        >
-          <MessageCircle className="w-6 h-6" />
-          <span>{commentsCount}</span>
-        </button>
+        {/* Likes count */}
+        {likesCount > 0 && (
+          <div className="mb-1">
+            <span className="font-semibold text-sm">{likesCount} likes</span>
+          </div>
+        )}
 
-        <button
-          onClick={handleSave}
-          className={`flex items-center space-x-2 transition-colors ${
-            isSaved ? "text-primary-600" : "text-gray-600 hover:text-primary-600"
-          }`}
-          title={isSaved ? "Unsave post" : "Save post"}
-        >
-          {isSaved ? (
-            <BookmarkCheck className="w-6 h-6 fill-current" />
-          ) : (
-            <Bookmark className="w-6 h-6" />
-          )}
-        </button>
+        {/* Caption */}
+        {post.content && (
+          <div className="mb-1">
+            <Link
+              href={`/profile/${post.author.username}`}
+              className="font-semibold text-sm mr-2"
+            >
+              {post.author.username}
+            </Link>
+            <span className="text-sm">{post.content}</span>
+            {post.hashtags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {post.hashtags.map((tag, index) => (
+                  <Link
+                    key={index}
+                    href={`/hashtag/${tag}`}
+                    className="text-sm text-blue-600"
+                  >
+                    #{tag}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-        <button className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors">
-          <Share2 className="w-6 h-6" />
-        </button>
+        {/* View comments */}
+        {commentsCount > 0 && (
+          <button
+            onClick={() => setShowComments(!showComments)}
+            className="text-gray-500 text-sm mb-1"
+          >
+            View all {commentsCount} comments
+          </button>
+        )}
 
-        <span 
-          className="text-sm text-gray-400 cursor-pointer hover:text-gray-600"
-          onClick={() => router.push(`/posts/${post.id}`)}
-        >
+        {/* Time */}
+        <div className="text-gray-400 text-xs uppercase mt-2">
           {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-        </span>
+        </div>
       </div>
 
+      {/* Comments section */}
       {showComments && (
-        <CommentSection
-          postId={post.id}
-          onCommentAdded={() => setCommentsCount(commentsCount + 1)}
-        />
+        <div className="px-4 pb-3 border-t border-gray-100">
+          <CommentSection
+            postId={post.id}
+            onCommentAdded={() => setCommentsCount(commentsCount + 1)}
+          />
+        </div>
       )}
     </div>
   )

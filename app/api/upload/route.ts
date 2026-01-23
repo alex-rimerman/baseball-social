@@ -15,6 +15,15 @@ export async function POST(request: Request) {
       )
     }
 
+    // Check Cloudinary configuration
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error("Cloudinary configuration missing")
+      return NextResponse.json(
+        { error: "Upload service not configured. Please check server configuration." },
+        { status: 500 }
+      )
+    }
+
     const formData = await request.formData()
     const file = formData.get("file") as File
 
@@ -43,10 +52,19 @@ export async function POST(request: Request) {
       )
     }
 
-    const url = await uploadToCloudinary(file)
-    return NextResponse.json({ url })
+    try {
+      const url = await uploadToCloudinary(file)
+      return NextResponse.json({ url })
+    } catch (uploadError) {
+      console.error("Cloudinary upload error:", uploadError)
+      const errorMessage = uploadError instanceof Error ? uploadError.message : "Failed to upload file"
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 500 }
+      )
+    }
   } catch (error) {
-    console.error("Error uploading file:", error)
+    console.error("Error in upload route:", error)
     const errorMessage = error instanceof Error ? error.message : "Internal server error"
     return NextResponse.json(
       { error: errorMessage },

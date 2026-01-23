@@ -82,74 +82,66 @@ export default function ExplorePage() {
   }, [fetchExploreData])
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 pb-24 md:pb-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-4 flex items-center">
-          <Sparkles className="w-8 h-8 mr-2 text-primary-600" />
-          Explore
-        </h1>
-        <p className="text-gray-600 mb-6">Discover content tailored to your interests</p>
+    <div className="max-w-4xl mx-auto min-h-screen bg-white pb-20">
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-gray-300 z-10">
+        <div className="px-4 py-3">
+          <h1 className="text-xl font-semibold">Explore</h1>
+        </div>
 
         {/* Tabs */}
-        <div className="flex space-x-2 border-b border-gray-200 mb-6">
+        <div className="flex border-t border-gray-200">
           <button
             onClick={() => setActiveTab("recommended")}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+            className={`flex-1 py-3 text-sm font-semibold border-b-2 ${
               activeTab === "recommended"
-                ? "border-primary-600 text-primary-600"
-                : "border-transparent text-gray-600 hover:text-gray-900"
+                ? "border-gray-900 text-gray-900"
+                : "border-transparent text-gray-400"
             }`}
           >
-            <Sparkles className="w-4 h-4 inline mr-2" />
-            Recommended
+            For You
           </button>
           <button
             onClick={() => setActiveTab("trending")}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+            className={`flex-1 py-3 text-sm font-semibold border-b-2 ${
               activeTab === "trending"
-                ? "border-primary-600 text-primary-600"
-                : "border-transparent text-gray-600 hover:text-gray-900"
+                ? "border-gray-900 text-gray-900"
+                : "border-transparent text-gray-400"
             }`}
           >
-            <TrendingUp className="w-4 h-4 inline mr-2" />
             Trending
           </button>
           <button
             onClick={() => setActiveTab("suggested")}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+            className={`flex-1 py-3 text-sm font-semibold border-b-2 ${
               activeTab === "suggested"
-                ? "border-primary-600 text-primary-600"
-                : "border-transparent text-gray-600 hover:text-gray-900"
+                ? "border-gray-900 text-gray-900"
+                : "border-transparent text-gray-400"
             }`}
           >
-            <Users className="w-4 h-4 inline mr-2" />
-            Suggested Users
+            Users
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-gray-500">Loading...</div>
+        <div className="text-center py-8 text-gray-500 text-sm">Loading...</div>
       ) : (
         <>
           {activeTab === "trending" && (
-            <div className="space-y-8">
+            <div>
               {/* Trending Hashtags */}
               {trendingHashtags.length > 0 && (
-                <div className="card">
-                  <h2 className="text-xl font-bold mb-4 flex items-center">
-                    <Hash className="w-5 h-5 mr-2" />
-                    Trending Hashtags
-                  </h2>
-                  <div className="flex flex-wrap gap-3">
+                <div className="px-4 py-4 border-b border-gray-200">
+                  <h2 className="text-sm font-semibold mb-3">Trending Hashtags</h2>
+                  <div className="flex flex-wrap gap-2">
                     {trendingHashtags.map(({ tag, count }) => (
                       <Link
                         key={tag}
                         href={`/hashtag/${tag}`}
-                        className="flex items-center space-x-2 bg-primary-50 hover:bg-primary-100 text-primary-700 px-4 py-2 rounded-lg transition-colors"
+                        className="text-sm text-blue-600"
                       >
-                        <span className="font-semibold">#{tag}</span>
-                        <span className="text-sm text-gray-600">({count} posts)</span>
+                        #{tag} ({count})
                       </Link>
                     ))}
                   </div>
@@ -158,13 +150,12 @@ export default function ExplorePage() {
 
               {/* Trending Posts */}
               <div>
-                <h2 className="text-xl font-bold mb-4">Trending Posts</h2>
                 {trendingPosts.length === 0 ? (
-                  <div className="card text-center text-gray-500 py-12">
+                  <div className="text-center text-gray-500 py-12 text-sm">
                     No trending posts at the moment
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div>
                     {trendingPosts.map((post) => (
                       <PostCard key={post.id} post={post} />
                     ))}
@@ -176,50 +167,45 @@ export default function ExplorePage() {
 
           {activeTab === "suggested" && (
             <div>
-              <h2 className="text-xl font-bold mb-4">Users You Might Like</h2>
               {suggestedUsers.length === 0 ? (
-                <div className="card text-center text-gray-500 py-12">
+                <div className="text-center text-gray-500 py-12 text-sm">
                   No suggested users at the moment
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div>
                   {suggestedUsers.map((user) => (
                     <Link
                       key={user.id}
                       href={`/profile/${user.username}`}
-                      className="card flex items-center space-x-4 hover:bg-gray-50 transition-colors"
+                      className="flex items-center space-x-4 px-4 py-3 border-b border-gray-200 hover:bg-gray-50"
                     >
-                      <div className="w-16 h-16 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
                         {user.image ? (
                           <Image
                             src={user.image}
                             alt={user.username}
-                            width={64}
-                            height={64}
+                            width={48}
+                            height={48}
                             className="w-full h-full object-cover"
                             unoptimized
                           />
                         ) : (
-                          <div className="w-full h-full bg-primary-600 flex items-center justify-center text-white text-xl font-semibold">
+                          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold">
                             {user.username.charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold">{user.name || user.username}</p>
+                        <p className="font-semibold text-sm">{user.name || user.username}</p>
                         <p className="text-sm text-gray-500">@{user.username}</p>
                         {user.bio && (
-                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{user.bio}</p>
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-1">{user.bio}</p>
                         )}
                         {user.favoriteTeam && (
-                          <span className="inline-block mt-2 bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded-full">
+                          <span className="inline-block mt-1 text-xs text-blue-600">
                             ⚾ {user.favoriteTeam}
                           </span>
                         )}
-                        <div className="flex space-x-4 mt-2 text-sm text-gray-500">
-                          <span>{user._count.posts} posts</span>
-                          <span>{user._count.followers} followers</span>
-                        </div>
                       </div>
                     </Link>
                   ))}
@@ -230,13 +216,12 @@ export default function ExplorePage() {
 
           {activeTab === "recommended" && (
             <div>
-              <h2 className="text-xl font-bold mb-4">Recommended for You</h2>
               {posts.length === 0 ? (
-                <div className="card text-center text-gray-500 py-12">
+                <div className="text-center text-gray-500 py-12 text-sm">
                   No recommended posts yet. Follow more users or update your profile preferences!
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div>
                   {posts.map((post) => (
                     <PostCard key={post.id} post={post} />
                   ))}

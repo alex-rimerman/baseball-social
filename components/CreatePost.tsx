@@ -92,8 +92,22 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         })
 
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json().catch(() => ({ error: "Upload failed" }))
-          throw new Error(errorData.error || "Failed to upload image")
+          let errorMessage = "Failed to upload image"
+          try {
+            const contentType = uploadResponse.headers.get("content-type")
+            if (contentType && contentType.includes("application/json")) {
+              const errorData = await uploadResponse.json()
+              errorMessage = errorData.error || errorMessage
+            } else {
+              const text = await uploadResponse.text()
+              console.error("Upload error response:", text)
+              errorMessage = `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`
+            }
+          } catch (e) {
+            console.error("Error parsing upload response:", e)
+            errorMessage = `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`
+          }
+          throw new Error(errorMessage)
         }
 
         const uploadData = await uploadResponse.json()
@@ -119,8 +133,22 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         })
 
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json().catch(() => ({ error: "Upload failed" }))
-          throw new Error(errorData.error || "Failed to upload video")
+          let errorMessage = "Failed to upload video"
+          try {
+            const contentType = uploadResponse.headers.get("content-type")
+            if (contentType && contentType.includes("application/json")) {
+              const errorData = await uploadResponse.json()
+              errorMessage = errorData.error || errorMessage
+            } else {
+              const text = await uploadResponse.text()
+              console.error("Upload error response:", text)
+              errorMessage = `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`
+            }
+          } catch (e) {
+            console.error("Error parsing upload response:", e)
+            errorMessage = `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`
+          }
+          throw new Error(errorMessage)
         }
 
         const uploadData = await uploadResponse.json()
@@ -163,16 +191,16 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card mb-6">
-      <div className="flex space-x-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+    <form onSubmit={handleSubmit} className="bg-white border-b border-gray-200 mb-1">
+      <div className="flex space-x-3 px-4 py-3">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
           {session.user?.name?.charAt(0) || session.user?.username?.charAt(0) || "U"}
         </div>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="What's happening in baseball today? #hashtag @mention"
-          className="flex-1 min-h-[100px] input-field resize-none"
+          className="flex-1 min-h-[80px] border-0 focus:ring-0 resize-none text-sm placeholder-gray-400"
           disabled={submitting}
         />
       </div>
@@ -212,36 +240,34 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="flex space-x-2">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+        <div className="flex space-x-4">
           <label className="cursor-pointer touch-manipulation">
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleImageSelect}
               className="hidden"
               disabled={submitting}
             />
-            <ImageIcon className="w-5 h-5 text-gray-600 hover:text-primary-600 transition-colors" />
+            <ImageIcon className="w-6 h-6 text-gray-900" />
           </label>
           <label className="cursor-pointer touch-manipulation">
             <input
               type="file"
               accept="video/*"
-              capture="environment"
               onChange={handleImageSelect}
               className="hidden"
               disabled={submitting}
             />
-            <Video className="w-5 h-5 text-gray-600 hover:text-primary-600 transition-colors" />
+            <Video className="w-6 h-6 text-gray-900" />
           </label>
         </div>
 
         <button
           type="submit"
           disabled={submitting || (!content.trim() && !imageFile && !videoFile)}
-          className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-blue-500 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Posting..." : "Post"}
         </button>

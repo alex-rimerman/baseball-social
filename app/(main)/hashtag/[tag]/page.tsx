@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useParams } from "next/navigation"
-import { Hash } from "lucide-react"
+import { useParams, useRouter } from "next/navigation"
+import { ArrowLeft, Hash } from "lucide-react"
 import PostCard from "@/components/PostCard"
 import InfiniteScroll from "react-infinite-scroll-component"
 
@@ -29,6 +29,7 @@ interface Post {
 
 export default function HashtagPage() {
   const { tag } = useParams()
+  const router = useRouter()
   const hashtag = decodeURIComponent(tag as string)
   const [posts, setPosts] = useState<Post[]>([])
   const [page, setPage] = useState(1)
@@ -68,21 +69,28 @@ export default function HashtagPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+      <div className="max-w-4xl mx-auto min-h-screen bg-white pb-20">
+        <div className="text-center py-8 text-sm">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 pb-24 md:pb-8">
-      <div className="card mb-6">
-        <div className="flex items-center space-x-3 mb-4">
-          <Hash className="w-8 h-8 text-primary-600" />
-          <div>
-            <h1 className="text-3xl font-bold">#{hashtag}</h1>
-            <p className="text-gray-600 mt-1">{totalPosts} posts</p>
+    <div className="max-w-4xl mx-auto min-h-screen bg-white pb-20">
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-gray-300 z-10">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button onClick={() => router.back()} className="p-2">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <div className="flex items-center space-x-2">
+            <Hash className="w-5 h-5" />
+            <h1 className="font-semibold text-sm">{hashtag}</h1>
           </div>
+          <div className="w-10"></div>
+        </div>
+        <div className="px-4 pb-3">
+          <p className="text-sm text-gray-600">{totalPosts} posts</p>
         </div>
       </div>
 
@@ -90,14 +98,14 @@ export default function HashtagPage() {
         dataLength={posts.length}
         next={loadMore}
         hasMore={hasMore}
-        loader={<div className="text-center py-4">Loading more posts...</div>}
+        loader={<div className="text-center py-4 text-gray-500 text-sm">Loading more posts...</div>}
         endMessage={
-          <div className="text-center py-4 text-gray-500">
+          <div className="text-center py-4 text-gray-500 text-sm">
             No more posts for #{hashtag}
           </div>
         }
       >
-        <div className="space-y-6">
+        <div>
           {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
@@ -105,7 +113,7 @@ export default function HashtagPage() {
       </InfiniteScroll>
 
       {posts.length === 0 && (
-        <div className="card text-center text-gray-500 py-12">
+        <div className="text-center text-gray-500 py-12 text-sm">
           No posts found for #{hashtag}
         </div>
       )}

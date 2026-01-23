@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { Bookmark, BookmarkCheck } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
 import PostCard from "@/components/PostCard"
 import InfiniteScroll from "react-infinite-scroll-component"
 
@@ -30,6 +31,7 @@ interface Post {
 
 export default function SavedPage() {
   const { data: session } = useSession()
+  const router = useRouter()
   const [posts, setPosts] = useState<Post[]>([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
@@ -68,49 +70,51 @@ export default function SavedPage() {
 
   if (!session) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center text-gray-500">Please sign in to view saved posts</div>
+      <div className="max-w-4xl mx-auto min-h-screen bg-white pb-20">
+        <div className="text-center text-gray-500 py-12 text-sm">Please sign in to view saved posts</div>
       </div>
     )
   }
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+      <div className="max-w-4xl mx-auto min-h-screen bg-white pb-20">
+        <div className="text-center py-8 text-sm">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 pb-24 md:pb-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2 flex items-center">
-          <BookmarkCheck className="w-8 h-8 mr-2 text-primary-600" />
-          Saved Posts
-        </h1>
-        <p className="text-gray-600">Posts you&apos;ve saved for later</p>
+    <div className="max-w-4xl mx-auto min-h-screen bg-white pb-20">
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-gray-300 z-10">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button onClick={() => router.back()} className="p-2">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="font-semibold text-sm">Saved</h1>
+          <div className="w-10"></div>
+        </div>
       </div>
 
       {posts.length === 0 ? (
-        <div className="card text-center text-gray-500 py-12">
-          <Bookmark className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-          <p>No saved posts yet</p>
-          <p className="text-sm mt-2">Save posts to easily find them later!</p>
+        <div className="text-center text-gray-500 py-12">
+          <p className="text-sm mb-2">No saved posts yet</p>
+          <p className="text-xs text-gray-400">Save posts to easily find them later!</p>
         </div>
       ) : (
         <InfiniteScroll
           dataLength={posts.length}
           next={loadMore}
           hasMore={hasMore}
-          loader={<div className="text-center py-4">Loading more posts...</div>}
+          loader={<div className="text-center py-4 text-gray-500 text-sm">Loading more posts...</div>}
           endMessage={
-            <div className="text-center py-4 text-gray-500">
+            <div className="text-center py-4 text-gray-500 text-sm">
               No more saved posts
             </div>
           }
         >
-          <div className="space-y-6">
+          <div>
             {posts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
