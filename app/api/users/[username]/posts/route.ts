@@ -29,8 +29,35 @@ export async function GET(
       )
     }
 
+    // Check if user is blocked
+    let canView = true
+    if (userId && userId !== user.id) {
+      const isBlocked = await prisma.block.findUnique({
+        where: {
+          blockerId_blockedId: {
+            blockerId: user.id,
+            blockedId: userId,
+          },
+        },
+      })
+      if (isBlocked) {
+        canView = false
+      }
+    }
+
+    if (!canView) {
+      return NextResponse.json(
+        { error: "Cannot view this user's posts" },
+        { status: 403 }
+      )
+    }
+
     const posts = await prisma.post.findMany({
-      where: { authorId: user.id },
+      where: {
+        authorId: user.id,
+        isArchived: false,
+        scheduledFor: null,
+      },
       take: limit,
       skip,
       orderBy: { createdAt: "desc" },

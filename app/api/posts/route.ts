@@ -15,7 +15,22 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
 
+    // Get blocked users
+    let blockedUserIds: string[] = []
+    if (userId) {
+      const blocks = await prisma.block.findMany({
+        where: { blockerId: userId },
+        select: { blockedId: true },
+      })
+      blockedUserIds = blocks.map((b) => b.blockedId)
+    }
+
     const posts = await prisma.post.findMany({
+      where: {
+        isArchived: false,
+        scheduledFor: null, // Only show published posts, not scheduled ones
+        authorId: blockedUserIds.length > 0 ? { notIn: blockedUserIds } : undefined,
+      },
       take: limit,
       skip,
       orderBy: { createdAt: "desc" },

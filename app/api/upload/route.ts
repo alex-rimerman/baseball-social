@@ -5,6 +5,15 @@ import { uploadToCloudinary } from "@/lib/cloudinary"
 
 export const dynamic = 'force-dynamic'
 
+// Increase body size limit for file uploads
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+  },
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -43,11 +52,12 @@ export async function POST(request: Request) {
       )
     }
 
-    // Validate file size (100MB max)
-    const maxSize = 100 * 1024 * 1024 // 100MB
+    // Validate file size (50MB max for images, 100MB for videos)
+    const isVideo = file.type.startsWith('video/')
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 20 * 1024 * 1024 // 100MB for videos, 20MB for images
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: "File is too large. Maximum size is 100MB." },
+        { error: `File is too large. Maximum size is ${isVideo ? '100MB' : '20MB'}.` },
         { status: 400 }
       )
     }

@@ -86,6 +86,8 @@ export default function NotificationsPage() {
         return <UserPlus className="w-5 h-5 text-green-500 fill-current" />
       case "mention":
         return <AtSign className="w-5 h-5 text-purple-500 fill-current" />
+      case "message":
+        return <MessageCircle className="w-5 h-5 text-blue-500 fill-current" />
       default:
         return <Bell className="w-5 h-5" />
     }
@@ -103,6 +105,8 @@ export default function NotificationsPage() {
         return `${senderName} started following you`
       case "mention":
         return `${senderName} mentioned you in a post`
+      case "message":
+        return `${senderName} sent you a message`
       default:
         return "New notification"
     }
@@ -124,14 +128,22 @@ export default function NotificationsPage() {
       <div className="sticky top-0 bg-white border-b border-gray-300 z-10">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-xl font-semibold">Notifications</h1>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="text-sm text-blue-500 font-semibold"
+          <div className="flex items-center space-x-3">
+            <Link
+              href="/activity"
+              className="text-sm text-gray-600 hover:text-gray-900"
             >
-              Mark all as read
-            </button>
-          )}
+              Activity
+            </Link>
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="text-sm text-blue-500 font-semibold"
+              >
+                Mark all as read
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -152,7 +164,9 @@ export default function NotificationsPage() {
                 if (!notification.read) {
                   markAsRead(notification.id)
                 }
-                if (notification.postId) {
+                if (notification.type === "message" && notification.sender) {
+                  router.push(`/messages?userId=${notification.sender.id}`)
+                } else if (notification.postId) {
                   router.push(`/posts/${notification.postId}`)
                 } else if (notification.type === "follow" && notification.sender) {
                   router.push(`/profile/${notification.sender.username}`)

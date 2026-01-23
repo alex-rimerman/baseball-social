@@ -8,6 +8,7 @@ import InfiniteScroll from "react-infinite-scroll-component"
 import PostCard from "./PostCard"
 import CreatePost from "./CreatePost"
 import StoriesSection from "./StoriesSection"
+import RealtimeFeed from "./RealtimeFeed"
 
 interface Post {
   id: string
@@ -71,6 +72,10 @@ export default function Feed() {
     setPage(1)
   }
 
+  const handlePostsUpdate = (updatedPosts: Post[]) => {
+    setPosts(updatedPosts)
+  }
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto min-h-screen bg-white pb-20">
@@ -120,6 +125,9 @@ export default function Feed() {
       <div className="hidden md:block">
         <CreatePost onPostCreated={handlePostCreated} />
       </div>
+
+      {/* Real-time updates */}
+      <RealtimeFeed posts={posts} onPostsUpdate={handlePostsUpdate} />
 
       {/* Posts Feed */}
       <InfiniteScroll

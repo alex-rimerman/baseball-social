@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Search, User, Hash } from "lucide-react"
+import { Search, User, Hash, Filter, X } from "lucide-react"
 import PostCard from "@/components/PostCard"
 
 interface SearchResult {
@@ -50,16 +50,39 @@ export default function DiscoverPage() {
   const [results, setResults] = useState<SearchResult>({})
   const [loading, setLoading] = useState(false)
   const [searchType, setSearchType] = useState<"all" | "users" | "posts">("all")
+  const [showFilters, setShowFilters] = useState(false)
+  const [filters, setFilters] = useState({
+    sortBy: "recent",
+    minLikes: "",
+    hashtag: "",
+    location: "",
+    favoriteTeam: "",
+  })
 
   const performSearch = useCallback(async () => {
-    if (!query.trim()) {
+    if (!query.trim() && searchType !== "posts") {
       setResults({})
       return
     }
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=${searchType}`)
+      let url = `/api/search?q=${encodeURIComponent(query)}&type=${searchType}`
+      if (searchType === "posts" && (filters.sortBy !== "recent" || filters.minLikes || filters.hashtag)) {
+        url = `/api/search/advanced?type=posts`
+        if (query) url += `&q=${encodeURIComponent(query)}`
+        if (filters.sortBy) url += `&sortBy=${filters.sortBy}`
+        if (filters.minLikes) url += `&minLikes=${filters.minLikes}`
+        if (filters.hashtag) url += `&hashtag=${encodeURIComponent(filters.hashtag)}`
+        if (filters.location) url += `&location=${encodeURIComponent(filters.location)}`
+        if (filters.favoriteTeam) url += `&favoriteTeam=${encodeURIComponent(filters.favoriteTeam)}`
+      } else if (searchType === "users" && (filters.location || filters.favoriteTeam)) {
+        url = `/api/search/advanced?type=users`
+        if (query) url += `&q=${encodeURIComponent(query)}`
+        if (filters.location) url += `&location=${encodeURIComponent(filters.location)}`
+        if (filters.favoriteTeam) url += `&favoriteTeam=${encodeURIComponent(filters.favoriteTeam)}`
+      }
+      const response = await fetch(url)
       const data = await response.json()
       setResults(data)
     } catch (error) {
@@ -67,7 +90,7 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false)
     }
-  }, [query, searchType])
+  }, [query, searchType, filters])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -130,7 +153,95 @@ export default function DiscoverPage() {
           >
             Posts
           </button>
+          {(searchType === "posts" || searchType === "users") && (
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="px-4 py-3 text-sm font-semibold border-b-2 border-transparent"
+            >
+              <Filter className="w-5 h-5" />
+            </button>
+          )}
         </div>
+
+        {/* Filters */}
+        {showFilters && (searchType === "posts" || searchType === "users") && (
+          <div className="border-t border-gray-200 p-4 bg-gray-50">
+            {searchType === "posts" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Sort By</label>
+                  <select
+                    value={filters.sortBy}
+                    onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="recent">Most Recent</option>
+                    <option value="popular">Most Popular</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Minimum Likes</label>
+                  <input
+                    type="number"
+                    value={filters.minLikes}
+                    onChange={(e) => setFilters({ ...filters, minLikes: e.target.value })}
+                    placeholder="0"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Hashtag</label>
+                  <input
+                    type="text"
+                    value={filters.hashtag}
+                    onChange={(e) => setFilters({ ...filters, hashtag: e.target.value })}
+                    placeholder="#hashtag"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+            {searchType === "users" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={filters.location}
+                    onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                    placeholder="City, State"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Favorite Team</label>
+                  <input
+                    type="text"
+                    value={filters.favoriteTeam}
+                    onChange={(e) => setFilters({ ...filters, favoriteTeam: e.target.value })}
+                    placeholder="Team name"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => {
+                setFilters({
+                  sortBy: "recent",
+                  minLikes: "",
+                  hashtag: "",
+                  location: "",
+                  favoriteTeam: "",
+                })
+                setShowFilters(false)
+              }}
+              className="mt-3 text-sm text-blue-600"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
       </div>
 
       {loading && (

@@ -20,8 +20,22 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "10")
     const skip = (page - 1) * limit
 
+    // Get blocked users
+    const blocks = await prisma.block.findMany({
+      where: { blockerId: session.user.id },
+      select: { blockedId: true },
+    })
+    const blockedUserIds = blocks.map((b) => b.blockedId)
+
     const savedPosts = await prisma.savedPost.findMany({
-      where: { userId: session.user.id },
+      where: {
+        userId: session.user.id,
+        post: {
+          isArchived: false,
+          scheduledFor: null,
+          authorId: blockedUserIds.length > 0 ? { notIn: blockedUserIds } : undefined,
+        },
+      },
       take: limit,
       skip,
       orderBy: { createdAt: "desc" },

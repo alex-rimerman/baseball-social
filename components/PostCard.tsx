@@ -8,6 +8,7 @@ import { Heart, MessageCircle, Share2, MoreHorizontal, Bookmark, BookmarkCheck }
 import { formatDistanceToNow } from "date-fns"
 import ReactPlayer from "react-player"
 import CommentSection from "./CommentSection"
+import PostMenu from "./PostMenu"
 
 interface PostCardProps {
   post: {
@@ -41,6 +42,7 @@ export default function PostCard({ post }: PostCardProps) {
   const [isLiking, setIsLiking] = useState(false)
   const [isSaved, setIsSaved] = useState((post as any).isSaved || false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
 
   const handleLike = async () => {
     if (isLiking) return
@@ -154,7 +156,7 @@ export default function PostCard({ post }: PostCardProps) {
           </div>
           <span className="font-semibold text-sm">{post.author.username}</span>
         </Link>
-        <button className="p-1">
+        <button onClick={() => setShowMenu(true)} className="p-1">
           <MoreHorizontal className="w-5 h-5 text-gray-900" />
         </button>
       </div>
@@ -260,6 +262,16 @@ export default function PostCard({ post }: PostCardProps) {
             onCommentAdded={() => setCommentsCount(commentsCount + 1)}
           />
         </div>
+      )}
+
+      {/* Post Menu */}
+      {showMenu && (
+        <PostMenu
+          postId={post.id}
+          authorId={post.author.id}
+          onClose={() => setShowMenu(false)}
+          onDeleted={() => router.refresh()}
+        />
       )}
     </div>
   )

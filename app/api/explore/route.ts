@@ -10,6 +10,16 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id
 
+    // Get blocked users
+    let blockedUserIds: string[] = []
+    if (userId) {
+      const blocks = await prisma.block.findMany({
+        where: { blockerId: userId },
+        select: { blockedId: true },
+      })
+      blockedUserIds = blocks.map((b) => b.blockedId)
+    }
+
     const { searchParams } = new URL(request.url)
     const type = searchParams.get("type") || "recommended" // recommended, trending, suggested
 
@@ -20,7 +30,10 @@ export async function GET(request: Request) {
 
       const recentPosts = await prisma.post.findMany({
         where: {
-          createdAt: { gte: sevenDaysAgo }
+          createdAt: { gte: sevenDaysAgo },
+          isArchived: false,
+          scheduledFor: null,
+          authorId: blockedUserIds.length > 0 ? { notIn: blockedUserIds } : undefined,
         },
         select: {
           hashtags: true
@@ -43,7 +56,10 @@ export async function GET(request: Request) {
       // Get trending posts (most liked/commented in last 7 days)
       const trendingPosts = await prisma.post.findMany({
         where: {
-          createdAt: { gte: sevenDaysAgo }
+          createdAt: { gte: sevenDaysAgo },
+          isArchived: false,
+          scheduledFor: null,
+          authorId: blockedUserIds.length > 0 ? { notIn: blockedUserIds } : undefined,
         },
         take: 20,
         orderBy: { createdAt: "desc" },
@@ -107,7 +123,7 @@ export async function GET(request: Request) {
       // Find users with similar interests or location
       const suggestedUsers = await prisma.user.findMany({
         where: {
-          id: { notIn: followingIds },
+          id: { notIn: [...followingIds, ...blockedUserIds] },
           OR: [
             ...(user?.favoriteTeam ? [{ favoriteTeam: user.favoriteTeam }] : []),
             ...(user?.location ? [{ location: { contains: user.location, mode: "insensitive" as const } }] : []),
@@ -142,6 +158,10 @@ export async function GET(request: Request) {
     if (!userId) {
       // For non-logged in users, return trending posts
       const recentPosts = await prisma.post.findMany({
+        where: {
+          isArchived: false,
+          scheduledFor: null,
+        },
         take: 20,
         orderBy: { createdAt: "desc" },
         include: {
@@ -186,7 +206,9 @@ export async function GET(request: Request) {
 
     const followingPosts = await prisma.post.findMany({
       where: {
-        authorId: { in: followingIds }
+        authorId: { in: followingIds },
+        isArchived: false,
+        scheduledFor: null,
       },
       take: 10,
       orderBy: { createdAt: "desc" },
@@ -215,7 +237,9 @@ export async function GET(request: Request) {
     const teamPlayerPosts = user?.favoriteTeam || user?.favoritePlayer
       ? await prisma.post.findMany({
           where: {
-            authorId: { notIn: [...followingIds, userId] },
+            authorId: { notIn: [...followingIds, userId, ...blockedUserIds] },
+            isArchived: false,
+            scheduledFor: null,
             OR: [
               ...(user.favoriteTeam ? [
                 { content: { contains: user.favoriteTeam, mode: "insensitive" as const } },

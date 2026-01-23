@@ -24,6 +24,7 @@ export async function GET(
         favoriteTeam: true,
         favoritePlayer: true,
         location: true,
+        isPrivate: true,
         createdAt: true,
         _count: {
           select: {
@@ -40,6 +41,24 @@ export async function GET(
         { error: "User not found" },
         { status: 404 }
       )
+    }
+
+    // Check if user is blocked
+    if (userId && userId !== user.id) {
+      const isBlocked = await prisma.block.findUnique({
+        where: {
+          blockerId_blockedId: {
+            blockerId: user.id,
+            blockedId: userId,
+          },
+        },
+      })
+      if (isBlocked) {
+        return NextResponse.json(
+          { error: "Cannot view this profile" },
+          { status: 403 }
+        )
+      }
     }
 
     let isFollowing = false
@@ -101,7 +120,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { name, bio, favoriteTeam, favoritePlayer, location } = body
+    const { name, bio, favoriteTeam, favoritePlayer, location, isPrivate } = body
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
@@ -111,6 +130,7 @@ export async function PATCH(
         ...(favoriteTeam !== undefined && { favoriteTeam }),
         ...(favoritePlayer !== undefined && { favoritePlayer }),
         ...(location !== undefined && { location }),
+        ...(isPrivate !== undefined && { isPrivate }),
       },
       select: {
         id: true,
@@ -121,6 +141,7 @@ export async function PATCH(
         favoriteTeam: true,
         favoritePlayer: true,
         location: true,
+        isPrivate: true,
         createdAt: true,
       }
     })
@@ -128,6 +149,52 @@ export async function PATCH(
     return NextResponse.json({ user: updatedUser })
   } catch (error) {
     console.error("Error updating user:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { username: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { username: params.username }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      )
+    }
+
+    if (user.id !== session.user.id) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      )
+    }
+
+    // Delete user (cascade will handle related data)
+    await prisma.user.delete({
+      where: { id: user.id }
+    })
+
+    return NextResponse.json({ message: "Account deleted" })
+  } catch (error) {
+    console.error("Error deleting user:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

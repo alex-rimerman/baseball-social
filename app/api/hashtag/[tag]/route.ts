@@ -20,9 +20,22 @@ export async function GET(
 
     const hashtag = decodeURIComponent(params.tag)
 
+    // Get blocked users
+    let blockedUserIds: string[] = []
+    if (userId) {
+      const blocks = await prisma.block.findMany({
+        where: { blockerId: userId },
+        select: { blockedId: true },
+      })
+      blockedUserIds = blocks.map((b) => b.blockedId)
+    }
+
     const posts = await prisma.post.findMany({
       where: {
-        hashtags: { has: hashtag }
+        hashtags: { has: hashtag },
+        isArchived: false,
+        scheduledFor: null,
+        authorId: blockedUserIds.length > 0 ? { notIn: blockedUserIds } : undefined,
       },
       take: limit,
       skip,

@@ -155,6 +155,54 @@ The app uses PostgreSQL with the following main models:
 - **Follow** - User follow relationships
 - **Notification** - User notifications
 
+## 🚀 Quick Start
+
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+### 2. Set Up Environment Variables
+Create a `.env` file with:
+```env
+DATABASE_URL="your-supabase-connection-string"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret"
+CLOUDINARY_CLOUD_NAME="your-cloud-name"
+CLOUDINARY_API_KEY="your-api-key"
+CLOUDINARY_API_SECRET="your-api-secret"
+```
+
+### 3. Set Up Database
+```bash
+npm run db:push
+```
+
+### 4. Run Development Server
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000` to see your app!
+
+## 📋 Deployment Instructions
+
+**See `NEXT_STEPS.md` for complete deployment guide with step-by-step instructions.**
+
+Quick summary:
+1. Push schema: `npm run db:push`
+2. Push code to GitHub
+3. Deploy to Vercel
+4. Add environment variables
+5. Set up cron job for scheduled posts (optional)
+
+## 📚 Documentation
+
+- **`NEXT_STEPS.md`** - Complete setup and deployment guide
+- **`DEPLOYMENT_CHECKLIST.md`** - Pre and post-deployment checklist
+- **`FEATURES.md`** - Complete list of all features
+- **`QUICK_DEPLOY.md`** - Quick reference for deployment
+
 ## Contributing
 
 This is a personal project, but suggestions and improvements are welcome!

@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { UserPlus, UserMinus, MoreHorizontal, Grid3x3 } from "lucide-react"
+import { UserPlus, UserMinus, MoreHorizontal, Grid3x3, Ban, Flag, LogOut } from "lucide-react"
 
 interface User {
   id: string
@@ -41,6 +41,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [following, setFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const [isBlocked, setIsBlocked] = useState(false)
+  const [showReport, setShowReport] = useState(false)
 
   const fetchUser = useCallback(async () => {
     try {
@@ -156,9 +159,15 @@ export default function ProfilePage() {
           </svg>
         </button>
         <h1 className="font-semibold text-sm">{user.username}</h1>
-        <button className="p-2">
-          <MoreHorizontal className="w-6 h-6" />
-        </button>
+        {user.isOwnProfile ? (
+          <button onClick={() => signOut({ callbackUrl: "/auth/signin" })} className="p-2" title="Sign Out">
+            <LogOut className="w-6 h-6" />
+          </button>
+        ) : (
+          <button onClick={() => setShowMenu(true)} className="p-2">
+            <MoreHorizontal className="w-6 h-6" />
+          </button>
+        )}
       </div>
 
       {/* Profile Info */}
@@ -199,26 +208,56 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Action Button */}
+            {/* Action Buttons */}
             {user.isOwnProfile ? (
-              <Link
-                href={`/profile/${username}/edit`}
-                className="block w-full text-center py-1.5 px-4 border border-gray-300 rounded-md text-sm font-semibold"
-              >
-                Edit Profile
-              </Link>
+              <div className="space-y-2">
+                <Link
+                  href={`/profile/${username}/edit`}
+                  className="block w-full text-center py-1.5 px-4 border border-gray-300 rounded-md text-sm font-semibold"
+                >
+                  Edit Profile
+                </Link>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/analytics"
+                    className="text-center py-1.5 px-4 border border-gray-300 rounded-md text-sm font-semibold"
+                  >
+                    Analytics
+                  </Link>
+                  <Link
+                    href="/schedule"
+                    className="text-center py-1.5 px-4 border border-gray-300 rounded-md text-sm font-semibold"
+                  >
+                    Schedule
+                  </Link>
+                </div>
+                <Link
+                  href="/settings"
+                  className="block w-full text-center py-1.5 px-4 border border-gray-300 rounded-md text-sm font-semibold mt-2"
+                >
+                  Settings
+                </Link>
+              </div>
             ) : (
-              <button
-                onClick={handleFollow}
-                disabled={followLoading}
-                className={`w-full py-1.5 px-4 rounded-md text-sm font-semibold ${
-                  following
-                    ? "bg-gray-200 text-gray-900"
-                    : "bg-blue-500 text-white"
-                } disabled:opacity-50`}
-              >
-                {following ? "Following" : "Follow"}
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={handleFollow}
+                  disabled={followLoading}
+                  className={`w-full py-1.5 px-4 rounded-md text-sm font-semibold ${
+                    following
+                      ? "bg-gray-200 text-gray-900"
+                      : "bg-blue-500 text-white"
+                  } disabled:opacity-50`}
+                >
+                  {following ? "Following" : "Follow"}
+                </button>
+                <Link
+                  href={`/messages?userId=${user.id}`}
+                  className="block w-full text-center py-1.5 px-4 border border-gray-300 rounded-md text-sm font-semibold"
+                >
+                  Message
+                </Link>
+              </div>
             )}
           </div>
         </div>
@@ -283,6 +322,102 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Profile Menu */}
+      {showMenu && !user.isOwnProfile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowMenu(false)}>
+          <div className="bg-white rounded-lg max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="p-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await fetch(`/api/users/${username}/block`, {
+                      method: "POST",
+                    })
+                    if (response.ok) {
+                      const data = await response.json()
+                      setIsBlocked(data.blocked)
+                      setShowMenu(false)
+                      if (data.blocked) {
+                        alert("User blocked")
+                        router.push("/")
+                      } else {
+                        alert("User unblocked")
+                      }
+                    }
+                  } catch (error) {
+                    console.error("Error blocking user:", error)
+                  }
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-100 rounded-lg text-red-600"
+              >
+                <Ban className="w-5 h-5" />
+                <span>{isBlocked ? "Unblock" : "Block"} User</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowReport(true)
+                  setShowMenu(false)
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-100 rounded-lg text-red-600"
+              >
+                <Flag className="w-5 h-5" />
+                <span>Report User</span>
+              </button>
+              <button
+                onClick={() => setShowMenu(false)}
+                className="w-full px-4 py-3 hover:bg-gray-100 rounded-lg mt-2 border-t border-gray-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      {showReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-lg font-semibold mb-4">Report User</h2>
+            <div className="space-y-2">
+              {["Spam", "Harassment", "Inappropriate Content", "False Information", "Other"].map((reason) => (
+                <button
+                  key={reason}
+                  onClick={async () => {
+                    try {
+                      const response = await fetch("/api/reports", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          type: "user",
+                          userId: user.id,
+                          reason,
+                        }),
+                      })
+                      if (response.ok) {
+                        alert("Thank you for reporting. We'll review this user.")
+                        setShowReport(false)
+                      }
+                    } catch (error) {
+                      console.error("Error reporting user:", error)
+                    }
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-lg"
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowReport(false)}
+              className="w-full mt-4 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
