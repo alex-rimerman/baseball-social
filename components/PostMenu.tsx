@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Trash2, Edit, Flag, Share2, Copy, X } from "lucide-react"
@@ -24,13 +24,7 @@ export default function PostMenu({ postId, authorId, onClose, onEdit, onDeleted 
 
   const isOwner = session?.user?.id === authorId
 
-  useEffect(() => {
-    if (showEdit) {
-      fetchPost()
-    }
-  }, [showEdit])
-
-  const fetchPost = async () => {
+  const fetchPost = useCallback(async () => {
     try {
       const response = await fetch(`/api/posts/${postId}`)
       if (response.ok) {
@@ -40,7 +34,13 @@ export default function PostMenu({ postId, authorId, onClose, onEdit, onDeleted 
     } catch (error) {
       console.error("Error fetching post:", error)
     }
-  }
+  }, [postId])
+
+  useEffect(() => {
+    if (showEdit) {
+      fetchPost()
+    }
+  }, [showEdit, fetchPost])
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this post? This action cannot be undone.")) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { X } from "lucide-react"
@@ -36,13 +36,7 @@ export default function StoryViewPage() {
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (session) {
-      fetchStories()
-    }
-  }, [session])
-
-  const fetchStories = async () => {
+  const fetchStories = useCallback(async () => {
     try {
       const response = await fetch("/api/stories")
       if (response.ok) {
@@ -63,7 +57,13 @@ export default function StoryViewPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [username])
+
+  useEffect(() => {
+    if (session) {
+      fetchStories()
+    }
+  }, [session, fetchStories])
 
   const currentUser = storiesData[currentUserIndex]
   const currentStory = currentUser?.stories[currentStoryIndex]

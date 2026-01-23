@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Bell, Lock, Shield, User, Trash2, LogOut } from "lucide-react"
@@ -12,13 +12,7 @@ export default function SettingsPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [privateAccount, setPrivateAccount] = useState(false)
 
-  useEffect(() => {
-    if (session) {
-      fetchSettings()
-    }
-  }, [session])
-
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const response = await fetch(`/api/users/${session?.user?.username}`)
       if (response.ok) {
@@ -28,7 +22,13 @@ export default function SettingsPage() {
     } catch (error) {
       console.error("Error fetching settings:", error)
     }
-  }
+  }, [session?.user?.username])
+
+  useEffect(() => {
+    if (session) {
+      fetchSettings()
+    }
+  }, [session, fetchSettings])
 
   const handlePrivateToggle = async () => {
     try {
