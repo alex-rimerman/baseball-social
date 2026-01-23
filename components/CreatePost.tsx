@@ -17,6 +17,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   if (!session) return null
 
@@ -69,30 +70,63 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     if (!content.trim() && !imageFile && !videoFile) return
 
     setSubmitting(true)
+    setUploadError(null)
 
     try {
       let imageUrl: string | null = null
       let videoUrl: string | null = null
 
       if (imageFile) {
+        // Check file size (max 10MB for images)
+        if (imageFile.size > 10 * 1024 * 1024) {
+          setUploadError("Image file is too large. Maximum size is 10MB.")
+          setSubmitting(false)
+          return
+        }
+
         const formData = new FormData()
         formData.append("file", imageFile)
         const uploadResponse = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         })
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({ error: "Upload failed" }))
+          throw new Error(errorData.error || "Failed to upload image")
+        }
+
         const uploadData = await uploadResponse.json()
+        if (!uploadData.url) {
+          throw new Error("No URL returned from upload")
+        }
         imageUrl = uploadData.url
       }
 
       if (videoFile) {
+        // Check file size (max 100MB for videos)
+        if (videoFile.size > 100 * 1024 * 1024) {
+          setUploadError("Video file is too large. Maximum size is 100MB.")
+          setSubmitting(false)
+          return
+        }
+
         const formData = new FormData()
         formData.append("file", videoFile)
         const uploadResponse = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         })
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({ error: "Upload failed" }))
+          throw new Error(errorData.error || "Failed to upload video")
+        }
+
         const uploadData = await uploadResponse.json()
+        if (!uploadData.url) {
+          throw new Error("No URL returned from upload")
+        }
         videoUrl = uploadData.url
       }
 
@@ -111,14 +145,18 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         }),
       })
 
-      if (response.ok) {
-        setContent("")
-        removeMedia()
-        onPostCreated?.()
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to create post" }))
+        throw new Error(errorData.error || "Failed to create post")
       }
+
+      setContent("")
+      removeMedia()
+      setUploadError(null)
+      onPostCreated?.()
     } catch (error) {
       console.error("Error creating post:", error)
-      alert("Failed to create post. Please try again.")
+      setUploadError(error instanceof Error ? error.message : "Failed to create post. Please try again.")
     } finally {
       setSubmitting(false)
     }
@@ -139,12 +177,18 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         />
       </div>
 
+      {uploadError && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {uploadError}
+        </div>
+      )}
+
       {(imagePreview || videoPreview) && (
         <div className="relative mb-4 rounded-lg overflow-hidden">
           <button
             type="button"
             onClick={removeMedia}
-            className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 z-10"
+            className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 z-10 touch-manipulation"
           >
             <X className="w-5 h-5" />
           </button>
@@ -170,20 +214,22 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
 
       <div className="flex items-center justify-between">
         <div className="flex space-x-2">
-          <label className="cursor-pointer">
+          <label className="cursor-pointer touch-manipulation">
             <input
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={handleImageSelect}
               className="hidden"
               disabled={submitting}
             />
             <ImageIcon className="w-5 h-5 text-gray-600 hover:text-primary-600 transition-colors" />
           </label>
-          <label className="cursor-pointer">
+          <label className="cursor-pointer touch-manipulation">
             <input
               type="file"
               accept="video/*"
+              capture="environment"
               onChange={handleImageSelect}
               className="hidden"
               disabled={submitting}
