@@ -53,14 +53,6 @@ export async function GET(request: Request) {
         authorId: userId,
         isArchived: false,
       },
-      include: {
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-          },
-        },
-      },
       orderBy: [
         { likes: { _count: "desc" } },
         { comments: { _count: "desc" } },

@@ -4,15 +4,8 @@ import { authOptions } from "@/lib/auth"
 import { uploadToCloudinary } from "@/lib/cloudinary"
 
 export const dynamic = 'force-dynamic'
-
-// Increase body size limit for file uploads
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
-}
+// Note: Body size limits are handled by the server runtime in App Router
+// For Vercel, you may need to configure maxDuration in vercel.json if needed
 
 export async function POST(request: Request) {
   try {
