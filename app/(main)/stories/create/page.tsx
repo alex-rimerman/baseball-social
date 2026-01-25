@@ -55,50 +55,68 @@ export default function CreateStoryPage() {
     }
   }
 
-  // Upload directly to Cloudinary for large files (bypasses Vercel's 4.5MB limit)
+  // Upload directly to Cloudinary (bypasses Vercel's 4.5MB limit)
   const uploadToCloudinaryDirect = async (file: File): Promise<string> => {
-    // Get upload signature from our API
-    const signatureResponse = await fetch("/api/upload/signature", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileType: file.type, fileName: file.name }),
-    })
-
-    if (!signatureResponse.ok) {
-      throw new Error("Failed to get upload signature")
-    }
-
-    const { signature, timestamp, cloudName, apiKey, folder, resourceType } = await signatureResponse.json()
-
-    // Upload directly to Cloudinary
-    const uploadFormData = new FormData()
-    uploadFormData.append("file", file)
-    uploadFormData.append("api_key", apiKey)
-    uploadFormData.append("timestamp", timestamp.toString())
-    uploadFormData.append("signature", signature)
-    uploadFormData.append("folder", folder)
-    uploadFormData.append("resource_type", resourceType)
-
-    if (resourceType === "video") {
-      uploadFormData.append("eager", "mp4")
-      uploadFormData.append("eager_async", "false")
-    }
-
-    const cloudinaryResponse = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
-      {
+    try {
+      // Get upload signature from our API
+      const signatureResponse = await fetch("/api/upload/signature", {
         method: "POST",
-        body: uploadFormData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileType: file.type, fileName: file.name }),
+      })
+
+      if (!signatureResponse.ok) {
+        const errorText = await signatureResponse.text().catch(() => "Unknown error")
+        console.error("Signature API error:", signatureResponse.status, errorText)
+        throw new Error(`Failed to get upload signature: ${signatureResponse.status}`)
       }
-    )
 
-    if (!cloudinaryResponse.ok) {
-      const errorData = await cloudinaryResponse.json().catch(() => ({}))
-      throw new Error(errorData.error?.message || "Failed to upload to Cloudinary")
+      const signatureData = await signatureResponse.json()
+      
+      if (!signatureData.signature || !signatureData.cloudName || !signatureData.apiKey) {
+        console.error("Invalid signature response:", signatureData)
+        throw new Error("Invalid signature response from server")
+      }
+
+      const { signature, timestamp, cloudName, apiKey, folder, resourceType } = signatureData
+
+      // Upload directly to Cloudinary
+      const uploadFormData = new FormData()
+      uploadFormData.append("file", file)
+      uploadFormData.append("api_key", apiKey)
+      uploadFormData.append("timestamp", timestamp.toString())
+      uploadFormData.append("signature", signature)
+      uploadFormData.append("folder", folder)
+      uploadFormData.append("resource_type", resourceType)
+
+      if (resourceType === "video") {
+        uploadFormData.append("eager", "mp4")
+        uploadFormData.append("eager_async", "false")
+      }
+
+      const cloudinaryResponse = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
+        {
+          method: "POST",
+          body: uploadFormData,
+        }
+      )
+
+      if (!cloudinaryResponse.ok) {
+        const errorData = await cloudinaryResponse.json().catch(() => ({}))
+        console.error("Cloudinary upload error:", errorData)
+        throw new Error(errorData.error?.message || `Cloudinary upload failed: ${cloudinaryResponse.status}`)
+      }
+
+      const result = await cloudinaryResponse.json()
+      if (!result.secure_url) {
+        throw new Error("No URL returned from Cloudinary")
+      }
+      return result.secure_url
+    } catch (error) {
+      console.error("Upload error:", error)
+      throw error
     }
-
-    const result = await cloudinaryResponse.json()
-    return result.secure_url
   }
 
   const handleSubmit = async () => {

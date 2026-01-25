@@ -65,50 +65,68 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     return matches ? matches.map(m => m.replace("@", "")) : []
   }
 
-  // Upload directly to Cloudinary for large files (bypasses Vercel's 4.5MB limit)
+  // Upload directly to Cloudinary (bypasses Vercel's 4.5MB limit)
   const uploadToCloudinaryDirect = async (file: File): Promise<string> => {
-    // Get upload signature from our API
-    const signatureResponse = await fetch("/api/upload/signature", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileType: file.type, fileName: file.name }),
-    })
-
-    if (!signatureResponse.ok) {
-      throw new Error("Failed to get upload signature")
-    }
-
-    const { signature, timestamp, cloudName, apiKey, folder, resourceType } = await signatureResponse.json()
-
-    // Upload directly to Cloudinary
-    const uploadFormData = new FormData()
-    uploadFormData.append("file", file)
-    uploadFormData.append("api_key", apiKey)
-    uploadFormData.append("timestamp", timestamp.toString())
-    uploadFormData.append("signature", signature)
-    uploadFormData.append("folder", folder)
-    uploadFormData.append("resource_type", resourceType)
-
-    if (resourceType === "video") {
-      uploadFormData.append("eager", "mp4")
-      uploadFormData.append("eager_async", "false")
-    }
-
-    const cloudinaryResponse = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
-      {
+    try {
+      // Get upload signature from our API
+      const signatureResponse = await fetch("/api/upload/signature", {
         method: "POST",
-        body: uploadFormData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileType: file.type, fileName: file.name }),
+      })
+
+      if (!signatureResponse.ok) {
+        const errorText = await signatureResponse.text().catch(() => "Unknown error")
+        console.error("Signature API error:", signatureResponse.status, errorText)
+        throw new Error(`Failed to get upload signature: ${signatureResponse.status}`)
       }
-    )
 
-    if (!cloudinaryResponse.ok) {
-      const errorData = await cloudinaryResponse.json().catch(() => ({}))
-      throw new Error(errorData.error?.message || "Failed to upload to Cloudinary")
+      const signatureData = await signatureResponse.json()
+      
+      if (!signatureData.signature || !signatureData.cloudName || !signatureData.apiKey) {
+        console.error("Invalid signature response:", signatureData)
+        throw new Error("Invalid signature response from server")
+      }
+
+      const { signature, timestamp, cloudName, apiKey, folder, resourceType } = signatureData
+
+      // Upload directly to Cloudinary
+      const uploadFormData = new FormData()
+      uploadFormData.append("file", file)
+      uploadFormData.append("api_key", apiKey)
+      uploadFormData.append("timestamp", timestamp.toString())
+      uploadFormData.append("signature", signature)
+      uploadFormData.append("folder", folder)
+      uploadFormData.append("resource_type", resourceType)
+
+      if (resourceType === "video") {
+        uploadFormData.append("eager", "mp4")
+        uploadFormData.append("eager_async", "false")
+      }
+
+      const cloudinaryResponse = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
+        {
+          method: "POST",
+          body: uploadFormData,
+        }
+      )
+
+      if (!cloudinaryResponse.ok) {
+        const errorData = await cloudinaryResponse.json().catch(() => ({}))
+        console.error("Cloudinary upload error:", errorData)
+        throw new Error(errorData.error?.message || `Cloudinary upload failed: ${cloudinaryResponse.status}`)
+      }
+
+      const result = await cloudinaryResponse.json()
+      if (!result.secure_url) {
+        throw new Error("No URL returned from Cloudinary")
+      }
+      return result.secure_url
+    } catch (error) {
+      console.error("Upload error:", error)
+      throw error
     }
-
-    const result = await cloudinaryResponse.json()
-    return result.secure_url
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,8 +140,8 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
       let imageUrl: string | null = null
       let videoUrl: string | null = null
 
-      // Use direct Cloudinary upload for files larger than 4MB (to avoid Vercel's 4.5MB limit)
-      const VERCEL_SIZE_LIMIT = 4 * 1024 * 1024 // 4MB
+      // Always use direct Cloudinary upload to avoid Vercel's 4.5MB limit
+      // This is more reliable and works for all file sizes
 
       if (imageFile) {
         // Check file size (max 20MB for images)
@@ -133,42 +151,13 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           return
         }
 
-        if (imageFile.size > VERCEL_SIZE_LIMIT) {
-          // Use direct Cloudinary upload for large files
+        try {
           imageUrl = await uploadToCloudinaryDirect(imageFile)
-        } else {
-          // Use server-side upload for small files
-          const formData = new FormData()
-          formData.append("file", imageFile)
-          const uploadResponse = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          })
-
-          if (!uploadResponse.ok) {
-            let errorMessage = "Failed to upload image"
-            try {
-              const contentType = uploadResponse.headers.get("content-type")
-              if (contentType && contentType.includes("application/json")) {
-                const errorData = await uploadResponse.json()
-                errorMessage = errorData.error || errorMessage
-              } else {
-                const text = await uploadResponse.text()
-                console.error("Upload error response:", text)
-                errorMessage = `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`
-              }
-            } catch (e) {
-              console.error("Error parsing upload response:", e)
-              errorMessage = `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`
-            }
-            throw new Error(errorMessage)
-          }
-
-          const uploadData = await uploadResponse.json()
-          if (!uploadData.url) {
-            throw new Error("No URL returned from upload")
-          }
-          imageUrl = uploadData.url
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Failed to upload image"
+          setUploadError(errorMessage)
+          setSubmitting(false)
+          return
         }
       }
 
@@ -180,8 +169,14 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           return
         }
 
-        // Always use direct Cloudinary upload for videos (they're usually large)
-        videoUrl = await uploadToCloudinaryDirect(videoFile)
+        try {
+          videoUrl = await uploadToCloudinaryDirect(videoFile)
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Failed to upload video"
+          setUploadError(errorMessage)
+          setSubmitting(false)
+          return
+        }
       }
 
       const hashtags = extractHashtags(content)

@@ -22,6 +22,15 @@ export async function POST(request: Request) {
       )
     }
 
+    // Check Cloudinary configuration
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error("Cloudinary configuration missing")
+      return NextResponse.json(
+        { error: "Upload service not configured. Please check server configuration." },
+        { status: 500 }
+      )
+    }
+
     const { fileType, fileName } = await request.json()
     
     if (!fileType) {
@@ -62,8 +71,9 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error("Error generating upload signature:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
     return NextResponse.json(
-      { error: "Failed to generate upload signature" },
+      { error: `Failed to generate upload signature: ${errorMessage}` },
       { status: 500 }
     )
   }
